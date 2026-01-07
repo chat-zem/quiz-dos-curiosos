@@ -3,7 +3,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Quiz das Curiosidades - Guia dos Curiosos</title>
+    <title>Quiz dos Curiosos - Guia dos Curiosos</title>
+    <link rel="icon" type="image/png" href="https://www.guiadoscuriosos.com.br/wp-content/uploads/2020/05/cropped-favicon_guia-dos-curiosos_v3-1-180x180.png">
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
         @keyframes bounce {
@@ -22,11 +23,59 @@
             animation: spin 1s linear infinite;
         }
 
-        .card-flip {
-            transform: rotateY(180deg);
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+        .animate-pulse {
+            animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
         }
 
-        .transition-transform-3s {
+        @keyframes ping {
+            75%, 100% {
+                transform: scale(2);
+                opacity: 0;
+            }
+        }
+        .animate-ping {
+            animation: ping 1s cubic-bezier(0, 0, 0.2, 1) infinite;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .animate-fadeIn {
+            animation: fadeIn 0.5s ease-out;
+        }
+
+        .perspective-1000 {
+            perspective: 1000px;
+        }
+
+        .transform-3d {
+            transform-style: preserve-3d;
+        }
+
+        /* Background pattern */
+        .bg-pattern {
+            background-image: url('https://wallpapers.com/images/hd/blue-and-orange-background-1920-x-1200-aasgzvw4rlvwpqpx.jpg');
+            background-size: cover;
+            background-position: center;
+            background-attachment: fixed;
+        }
+
+        /* Overlay para suavizar o fundo */
+        .bg-overlay {
+            background: rgba(255, 255, 255, 0.92);
+        }
+
+        /* Transição da roleta */
+        #roletaSvg {
+            transition: transform 0.3s ease;
+        }
+
+        #roletaSvg.spinning {
             transition: transform 3.5s cubic-bezier(0.17, 0.67, 0.12, 0.99);
         }
     </style>
@@ -34,17 +83,17 @@
 <body>
     <div id="app"></div>
 
-    <script type="module">
-        // Dados do jogo
+    <script>
+        // Cores por categoria - baseadas nas capas dos livros do Guia dos Curiosos
         const CATEGORIAS = {
-            'Animais': { cor: '#FF6B6B', corClara: '#FFE0E0' },
-            'Cultura e Entretenimento': { cor: '#9B59B6', corClara: '#E8D4F1' },
-            'Ciência e Saúde': { cor: '#3498DB', corClara: '#D6EAF8' },
-            'Datas e Festas': { cor: '#F39C12', corClara: '#FCF3CF' },
-            'Esportes': { cor: '#27AE60', corClara: '#D5F4E6' },
-            'Geek e Mundo Nerd': { cor: '#E74C3C', corClara: '#FADBD8' },
-            'Livros': { cor: '#8B4513', corClara: '#F0E5D8' },
-            'Variedades': { cor: '#1ABC9C', corClara: '#D0F0EA' }
+            'Animais': { cor: '#1D9BF0', corClara: '#E0F2FE', emoji: '🦁' },
+            'Cultura e Entretenimento': { cor: '#8B5CF6', corClara: '#EDE9FE', emoji: '🎭' },
+            'Ciência e Saúde': { cor: '#1D9BF0', corClara: '#E0F2FE', emoji: '🔬' },
+            'Datas e Festas': { cor: '#F77F00', corClara: '#FFEDD5', emoji: '🎉' },
+            'Esportes': { cor: '#1D9BF0', corClara: '#E0F2FE', emoji: '⚽' },
+            'Geek e Mundo Nerd': { cor: '#E63946', corClara: '#FEE2E2', emoji: '🎮' },
+            'Livros': { cor: '#F77F00', corClara: '#FFEDD5', emoji: '📚' },
+            'Variedades': { cor: '#2A9D8F', corClara: '#D1FAE5', emoji: '✨' }
         };
 
         const PERGUNTAS = {
@@ -183,10 +232,22 @@
             anguloRoleta: 0
         };
 
+        // Ícones SVG
+        const icons = {
+            sparkles: '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m12 3-1.912 5.813a2 2 0 0 1-1.275 1.275L3 12l5.813 1.912a2 2 0 0 1 1.275 1.275L12 21l1.912-5.813a2 2 0 0 1 1.275-1.275L21 12l-5.813-1.912a2 2 0 0 1-1.275-1.275L12 3Z"/><path d="M5 3v4"/><path d="M19 17v4"/><path d="M3 5h4"/><path d="M17 19h4"/></svg>',
+            trophy: '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9H4.5a2.5 2.5 0 0 1 0-5H6"/><path d="M18 9h1.5a2.5 2.5 0 0 0 0-5H18"/><path d="M4 22h16"/><path d="M10 14.66V17c0 .55-.47.98-.97 1.21C7.85 18.75 7 20.24 7 22"/><path d="M14 14.66V17c0 .55.47.98.97 1.21C16.15 18.75 17 20.24 17 22"/><path d="M18 2H6v7a6 6 0 0 0 12 0V2Z"/></svg>',
+            target: '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/></svg>',
+            rotateCw: '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 1 1-9-9c2.52 0 4.93 1 6.74 2.74L21 8"/><path d="M21 3v5h-5"/></svg>',
+            check: '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>',
+            x: '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>',
+            zap: '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 14a1 1 0 0 1-.78-1.63l9.9-10.2a.5.5 0 0 1 .86.46l-1.92 6.02A1 1 0 0 0 13 10h7a1 1 0 0 1 .78 1.63l-9.9 10.2a.5.5 0 0 1-.86-.46l1.92-6.02A1 1 0 0 0 11 14z"/></svg>',
+            star: '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>',
+            award: '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m15.477 12.89 1.515 8.526a.5.5 0 0 1-.81.47l-3.58-2.687a1 1 0 0 0-1.197 0l-3.586 2.686a.5.5 0 0 1-.81-.469l1.514-8.526"/><circle cx="12" cy="8" r="6"/></svg>'
+        };
+
         function render() {
             const app = document.getElementById('app');
             app.innerHTML = getHTML();
-            attachEventListeners();
         }
 
         function getHTML() {
@@ -198,39 +259,79 @@
 
         function telaInicio() {
             return `
-                <div class="min-h-screen bg-gradient-to-br from-purple-600 via-pink-500 to-orange-400 flex items-center justify-center p-4">
-                    <div class="bg-white rounded-3xl shadow-2xl p-8 max-w-md w-full text-center">
-                        <div class="mb-6">
-                            <div class="text-6xl mb-4">✨</div>
-                            <h1 class="text-4xl font-bold text-gray-800 mb-2">Quiz das Curiosidades</h1>
-                            <p class="text-gray-600">Gire a roleta, escolha uma carta e teste seu conhecimento!</p>
-                        </div>
-                        
-                        <div class="bg-gradient-to-r from-purple-100 to-pink-100 rounded-2xl p-6 mb-6">
-                            <h2 class="text-lg font-bold text-gray-800 mb-3">Como Jogar:</h2>
-                            <div class="text-left space-y-2 text-sm text-gray-700">
-                                <div class="flex items-start gap-2">
-                                    <span class="bg-purple-500 text-white rounded-full w-6 h-6 flex items-center justify-center flex-shrink-0 text-xs font-bold">1</span>
-                                    <span>Gire a roleta das categorias</span>
-                                </div>
-                                <div class="flex items-start gap-2">
-                                    <span class="bg-purple-500 text-white rounded-full w-6 h-6 flex items-center justify-center flex-shrink-0 text-xs font-bold">2</span>
-                                    <span>Escolha uma carta às cegas</span>
-                                </div>
-                                <div class="flex items-start gap-2">
-                                    <span class="bg-purple-500 text-white rounded-full w-6 h-6 flex items-center justify-center flex-shrink-0 text-xs font-bold">3</span>
-                                    <span>Responda a pergunta</span>
-                                </div>
-                                <div class="flex items-start gap-2">
-                                    <span class="bg-purple-500 text-white rounded-full w-6 h-6 flex items-center justify-center flex-shrink-0 text-xs font-bold">4</span>
-                                    <span>Ganhe 100 pontos por acerto!</span>
-                                </div>
+                <div class="min-h-screen relative overflow-hidden bg-pattern">
+                    <!-- Overlay para suavizar o fundo -->
+                    <div class="absolute inset-0 bg-overlay"></div>
+
+                    <div class="relative z-10 min-h-screen flex flex-col items-center justify-center p-4">
+                        <!-- Logo do Quiz dos Curiosos -->
+                        <div class="mb-8">
+                            <img 
+                                src="https://i.imgur.com/chJrYgg.png" 
+                                alt="Quiz dos Curiosos" 
+                                class="w-96 h-auto drop-shadow-2xl"
+                                onerror="this.style.display='none'; this.nextElementSibling.style.display='block';"
+                            />
+                            <div style="display: none;" class="text-center">
+                                <h1 class="text-6xl font-black mb-2" style="color: #2C3E7E;">
+                                    <span style="color: #FFC107;">QUIZ</span><br>
+                                    <span style="color: #FFC107;">dos</span><br>
+                                    <span style="color: #FFC107;">CURIOSOS</span>
+                                </h1>
+                                <div class="text-lg font-bold" style="color: #F77F00;">MARCELO DUARTE</div>
                             </div>
                         </div>
-                        
-                        <button onclick="comecarJogo()" class="w-full bg-gradient-to-r from-purple-600 to-pink-600 text-white py-4 rounded-xl font-bold text-lg hover:from-purple-700 hover:to-pink-700 transition-all transform hover:scale-105 shadow-lg">
-                            Começar Jogo! 🎮
-                        </button>
+
+                        <div class="bg-white rounded-3xl shadow-2xl p-8 max-w-md w-full text-center border-4" style="border-color: #1D9BF0;">
+                            <div class="mb-6">
+                                <h2 class="text-2xl font-bold mb-3" style="color: #2C3E7E;">Como Jogar</h2>
+                                <div class="text-left space-y-3">
+                                    ${[
+                                        { icon: '🎡', text: 'Gire a roleta colorida das categorias' },
+                                        { icon: '🎴', text: 'Escolha uma carta misteriosa às cegas' },
+                                        { icon: '❓', text: 'Responda a pergunta revelada' },
+                                        { icon: '💯', text: 'Ganhe 100 pontos por cada acerto!' }
+                                    ].map((item, i) => `
+                                        <div class="flex items-start gap-3 hover:translate-x-2 transition-transform">
+                                            <div class="rounded-full w-8 h-8 flex items-center justify-center text-lg font-bold shadow-lg" style="background-color: #F77F00; color: white;">
+                                                ${i + 1}
+                                            </div>
+                                            <div class="flex items-center gap-2">
+                                                <span class="text-2xl">${item.icon}</span>
+                                                <span class="font-medium" style="color: #2C3E7E;">${item.text}</span>
+                                            </div>
+                                        </div>
+                                    `).join('')}
+                                </div>
+                            </div>
+
+                            <div class="flex justify-center gap-2 mb-6 flex-wrap">
+                                ${[
+                                    { icon: 'zap', text: 'Rápido' },
+                                    { icon: 'star', text: 'Divertido' },
+                                    { icon: 'award', text: 'Educativo' }
+                                ].map(badge => `
+                                    <div class="px-4 py-2 rounded-full flex items-center gap-2 font-semibold text-sm border-2" style="background-color: #E0F2FE; border-color: #1D9BF0; color: #2C3E7E;">
+                                        <div class="w-4 h-4">${icons[badge.icon]}</div>
+                                        ${badge.text}
+                                    </div>
+                                `).join('')}
+                            </div>
+                            
+                            <button
+                                onclick="comecarJogo()"
+                                class="w-full text-white py-5 rounded-2xl font-bold text-xl shadow-2xl transition-all duration-300 hover:scale-105"
+                                style="background: linear-gradient(135deg, #1D9BF0 0%, #F77F00 100%);"
+                            >
+                                <div class="flex items-center justify-center gap-3">
+                                    <div class="w-6 h-6">${icons.sparkles}</div>
+                                    <span>Começar Jogo!</span>
+                                    <div class="w-6 h-6">${icons.sparkles}</div>
+                                </div>
+                            </button>
+
+                            <p class="text-gray-500 text-xs mt-4">© Guia dos Curiosos - Marcelo Duarte</p>
+                        </div>
                     </div>
                 </div>
             `;
@@ -253,24 +354,30 @@
                 const y2 = 200 + 190 * Math.sin(endAngle);
                 
                 const largeArcFlag = anguloFatia > 180 ? 1 : 0;
-                
                 const pathData = `M 200 200 L ${x1} ${y1} A 190 190 0 ${largeArcFlag} 1 ${x2} ${y2} Z`;
                 
-                const textRadius = 130;
+                const textRadius = 120;
                 const textX = 200 + textRadius * Math.cos(middleAngle);
                 const textY = 200 + textRadius * Math.sin(middleAngle);
                 const textAngle = (anguloFatia * index + anguloFatia / 2);
                 
+                const emojiRadius = 150;
+                const emojiX = 200 + emojiRadius * Math.cos(middleAngle);
+                const emojiY = 200 + emojiRadius * Math.sin(middleAngle);
+                
                 const palavras = cat.split(' ');
                 let tspans = '';
                 palavras.forEach((palavra, i) => {
-                    tspans += `<tspan x="${textX}" dy="${i === 0 ? 0 : 16}">${palavra}</tspan>`;
+                    tspans += `<tspan x="${textX}" dy="${i === 0 ? 0 : 15}">${palavra.toUpperCase()}</tspan>`;
                 });
                 
                 fatiasSVG += `
                     <g>
-                        <path d="${pathData}" fill="${CATEGORIAS[cat].cor}" stroke="white" stroke-width="3" />
-                        <text x="${textX}" y="${textY}" fill="white" font-size="14" font-weight="bold" text-anchor="middle" dominant-baseline="middle" transform="rotate(${textAngle}, ${textX}, ${textY})" style="text-shadow: 1px 1px 2px rgba(0,0,0,0.3)">
+                        <path d="${pathData}" fill="${CATEGORIAS[cat].cor}" stroke="white" stroke-width="4" />
+                        <text x="${emojiX}" y="${emojiY}" font-size="32" text-anchor="middle" dominant-baseline="middle" transform="rotate(${textAngle}, ${emojiX}, ${emojiY})">
+                            ${CATEGORIAS[cat].emoji}
+                        </text>
+                        <text x="${textX}" y="${textY}" fill="white" font-size="13" font-weight="800" text-anchor="middle" dominant-baseline="middle" transform="rotate(${textAngle}, ${textX}, ${textY})" style="text-shadow: 2px 2px 4px rgba(0,0,0,0.4);">
                             ${tspans}
                         </text>
                     </g>
@@ -278,52 +385,110 @@
             });
 
             return `
-                <div class="min-h-screen bg-gradient-to-br from-purple-600 via-pink-500 to-orange-400 flex items-center justify-center p-4">
-                    <div class="bg-white rounded-3xl shadow-2xl p-8 max-w-2xl w-full">
-                        <div class="flex justify-between items-center mb-8">
-                            <div>
-                                <div class="text-sm text-gray-500">Rodada ${state.rodada}</div>
-                                <div class="text-2xl font-bold text-gray-800">🏆 ${state.pontos} pontos</div>
-                            </div>
-                            <div class="text-right">
-                                <div class="text-sm text-gray-500">Acertos</div>
-                                <div class="text-2xl font-bold text-green-600">${state.acertos}</div>
-                            </div>
-                        </div>
-
-                        <h2 class="text-3xl font-bold text-center mb-4 text-gray-800">🎡 Gire a Roleta!</h2>
-                        <p class="text-center text-gray-600 mb-8">Clique na roleta ou no botão para girar</p>
-
-                        <div class="relative w-96 h-96 mx-auto mb-8">
-                            <div class="absolute top-0 left-1/2 -translate-x-1/2 -translate-y-3 z-20 pointer-events-none">
-                                <div class="relative">
-                                    <div class="w-0 h-0 border-l-[20px] border-l-transparent border-r-[20px] border-r-transparent border-t-[35px] border-t-red-600 drop-shadow-2xl"></div>
-                                    <div class="absolute -bottom-2 left-1/2 -translate-x-1/2 w-8 h-8 bg-red-600 rounded-full border-4 border-white shadow-lg"></div>
+                <div class="min-h-screen bg-pattern relative overflow-hidden">
+                    <div class="absolute inset-0 bg-overlay"></div>
+                    
+                    <div class="relative z-10 min-h-screen flex items-center justify-center p-4">
+                        <div class="bg-white rounded-3xl shadow-2xl p-8 max-w-2xl w-full border-4" style="border-color: #1D9BF0;">
+                            <div class="flex justify-between items-center mb-8">
+                                <div class="space-y-1">
+                                    <div class="text-sm font-semibold flex items-center gap-2" style="color: #1D9BF0;">
+                                        <div class="w-2 h-2 rounded-full animate-pulse" style="background-color: #1D9BF0;"></div>
+                                        Rodada ${state.rodada}
+                                    </div>
+                                    <div class="flex items-center gap-2">
+                                        <div class="p-2 rounded-lg" style="background-color: #F77F00;">
+                                            <div class="w-5 h-5 text-white">${icons.trophy}</div>
+                                        </div>
+                                        <div>
+                                            <div class="text-2xl font-black" style="color: #2C3E7E;">${state.pontos}</div>
+                                            <div class="text-xs text-gray-500">pontos</div>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="text-right space-y-1">
+                                    <div class="text-sm font-semibold" style="color: #2A9D8F;">Taxa de acerto</div>
+                                    <div class="flex items-center gap-2">
+                                        <div class="p-2 rounded-lg" style="background-color: #2A9D8F;">
+                                            <div class="w-5 h-5 text-white">${icons.target}</div>
+                                        </div>
+                                        <div>
+                                            <div class="text-2xl font-black" style="color: #2C3E7E;">${state.acertos}</div>
+                                            <div class="text-xs text-gray-500">acertos</div>
+                                        </div>
+                                    </div>
                                 </div>
                             </div>
 
-                            <div class="relative w-full h-full ${state.girando ? '' : 'cursor-pointer hover:scale-105 transition-transform'}" onclick="${state.girando ? '' : 'girarRoleta()'}">
-                                <svg viewBox="0 0 400 400" class="w-full h-full ${state.girando ? 'transition-transform-3s' : 'transition-transform duration-300'}" style="transform: rotate(${state.anguloRoleta}deg)">
-                                    <circle cx="200" cy="200" r="195" fill="white" stroke="#333" stroke-width="3" />
-                                    ${fatiasSVG}
-                                    <circle cx="200" cy="200" r="50" fill="white" stroke="#333" stroke-width="3" />
-                                    <circle cx="200" cy="200" r="45" fill="#f8f9fa" />
-                                    <text x="200" y="210" font-size="30" text-anchor="middle">${state.girando ? '' : '🎲'}</text>
-                                </svg>
+                            <div class="text-center mb-6">
+                                <h2 class="text-4xl font-black mb-2" style="color: #2C3E7E;">Gire a Roleta!</h2>
+                                <p class="font-medium" style="color: #F77F00;">Clique na roleta ou no botão abaixo</p>
                             </div>
-                        </div>
 
-                        ${state.categoriaAtual && !state.girando ? `
-                            <div class="text-center mb-6 animate-bounce">
-                                <div class="inline-block px-8 py-4 rounded-full text-white font-bold text-xl shadow-lg" style="background-color: ${CATEGORIAS[state.categoriaAtual].cor}">
-                                    ✨ ${state.categoriaAtual} ✨
+                            <div class="relative w-96 h-96 mx-auto mb-8">
+                                <div class="absolute top-0 left-1/2 -translate-x-1/2 -translate-y-4 z-20" style="pointer-events: none;">
+                                    <div class="relative">
+                                        <div class="w-0 h-0" style="border-left: 22px solid transparent; border-right: 22px solid transparent; border-top: 40px solid #F77F00;"></div>
+                                        <div class="absolute -bottom-2 left-1/2 -translate-x-1/2">
+                                            <div class="relative w-10 h-10 rounded-full border-4 border-white shadow-2xl flex items-center justify-center" style="background-color: #F77F00;">
+                                                <div class="w-2 h-2 bg-white rounded-full animate-ping"></div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="relative w-full h-full">
+                                    <div class="absolute inset-0 rounded-full border-8 border-white shadow-2xl"></div>
+                                    
+                                    <svg
+                                        id="roletaSvg"
+                                        viewBox="0 0 400 400"
+                                        class="w-full h-full ${state.girando ? '' : 'cursor-pointer'} ${state.girando ? 'spinning' : ''}"
+                                        style="transform: rotate(${state.anguloRoleta}deg); filter: drop-shadow(0 10px 30px rgba(0,0,0,0.2));"
+                                        onclick="${state.girando ? '' : 'girarRoleta()'}"
+                                    >
+                                        <circle cx="200" cy="200" r="198" fill="white"/>
+                                        ${fatiasSVG}
+                                        <circle cx="200" cy="200" r="55" fill="white" stroke="#dee2e6" stroke-width="3" />
+                                        <circle cx="200" cy="200" r="50" fill="#f8f9fa" />
+                                        ${!state.girando ? 
+                                            '<text x="200" y="215" font-size="36" text-anchor="middle">🎲</text>' :
+                                            '<circle cx="200" cy="200" r="25" fill="#1D9BF0" opacity="0.2"><animate attributeName="r" values="25;35;25" dur="1s" repeatCount="indefinite" /></circle>'
+                                        }
+                                    </svg>
                                 </div>
                             </div>
-                        ` : ''}
 
-                        <button onclick="girarRoleta()" ${state.girando ? 'disabled' : ''} class="w-full bg-gradient-to-r from-purple-600 to-pink-600 text-white py-4 rounded-xl font-bold text-lg hover:from-purple-700 hover:to-pink-700 transition-all transform hover:scale-105 shadow-lg disabled:opacity-50 disabled:cursor-not-allowed">
-                            ${state.girando ? 'Girando... 🎡' : 'Girar Roleta! 🎲'}
-                        </button>
+                            ${state.categoriaAtual && !state.girando ? `
+                                <div class="text-center mb-6">
+                                    <div class="inline-block relative">
+                                        <div class="relative px-8 py-4 rounded-full text-white font-black text-2xl shadow-2xl flex items-center gap-3 animate-bounce" style="background-color: ${CATEGORIAS[state.categoriaAtual].cor};">
+                                            <div class="w-6 h-6">${icons.sparkles}</div>
+                                            <span>${CATEGORIAS[state.categoriaAtual].emoji} ${state.categoriaAtual}</span>
+                                            <div class="w-6 h-6">${icons.sparkles}</div>
+                                        </div>
+                                    </div>
+                                </div>
+                            ` : ''}
+
+                            <button
+                                onclick="girarRoleta()"
+                                ${state.girando ? 'disabled' : ''}
+                                class="w-full text-white py-5 rounded-2xl font-bold text-xl shadow-2xl transition-all duration-300 hover:scale-105 disabled:opacity-50"
+                                style="background: linear-gradient(135deg, #1D9BF0 0%, #F77F00 100%);"
+                            >
+                                <div class="flex items-center justify-center gap-3">
+                                    ${state.girando ? `
+                                        <div class="w-6 h-6 animate-spin">${icons.rotateCw}</div>
+                                        <span>Girando...</span>
+                                    ` : `
+                                        <div class="w-6 h-6">${icons.sparkles}</div>
+                                        <span>Girar Roleta!</span>
+                                        <div class="w-6 h-6">${icons.sparkles}</div>
+                                    `}
+                                </div>
+                            </button>
+                        </div>
                     </div>
                 </div>
             `;
@@ -336,44 +501,111 @@
             let cartasHTML = '';
             for (let i = 0; i < numCartas; i++) {
                 const selecionada = state.cartaSelecionada === i;
+                
                 cartasHTML += `
-                    <button onclick="escolherCarta(${i})" ${state.cartaSelecionada !== null ? 'disabled' : ''} class="relative group">
-                        <div class="w-32 h-48 rounded-xl shadow-lg transition-all duration-300 ${selecionada ? 'transform scale-110' : 'hover:scale-110 hover:-translate-y-2'}" style="background-color: ${selecionada ? '#fff' : cor.cor}">
+                    <button 
+                        onclick="escolherCarta(${i})" 
+                        ${state.cartaSelecionada !== null ? 'disabled' : ''}
+                        class="relative group transform-gpu transition-all duration-500 transform-3d"
+                        style="transform: ${selecionada ? 'scale(1.15) translateY(-20px) rotateY(180deg)' : state.cartaSelecionada !== null ? 'scale(0.9) opacity(0.5)' : 'scale(1)'};"
+                    >
+                        <div class="relative w-36 h-52 rounded-2xl shadow-2xl transition-all duration-500 border-4 ${selecionada ? '' : 'hover:scale-110 hover:-translate-y-4'}" style="background: ${selecionada ? 'white' : cor.cor}; border-color: white;">
                             ${!selecionada ? `
-                                <div class="w-full h-full flex flex-col items-center justify-center p-4">
-                                    <div class="text-4xl text-white mb-2">✨</div>
-                                    <div class="w-full h-1 bg-white/30 rounded mb-2"></div>
-                                    <div class="w-3/4 h-1 bg-white/30 rounded mb-2"></div>
-                                    <div class="w-full h-1 bg-white/30 rounded"></div>
+                                <div class="w-full h-full flex flex-col items-center justify-center p-6 relative overflow-hidden">
+                                    <div class="absolute inset-0 opacity-10">
+                                        <div class="absolute inset-0" style="background-image: radial-gradient(circle, white 1px, transparent 1px); background-size: 20px 20px;"></div>
+                                    </div>
+                                    
+                                    <div class="relative z-10">
+                                        <div class="w-24 h-24 mb-4 mx-auto rounded-full bg-white/30 backdrop-blur-sm p-3 flex items-center justify-center">
+                                            <img 
+                                                src="https://www.guiadoscuriosos.com.br/wp-content/uploads/2020/05/cropped-favicon_guia-dos-curiosos_v3-1-180x180.png" 
+                                                alt="?" 
+                                                class="w-full h-full object-contain"
+                                                onerror="this.style.display='none'; this.nextElementSibling.style.display='block';"
+                                            />
+                                            <div style="display: none;" class="text-6xl">❓</div>
+                                        </div>
+                                        
+                                        <div class="space-y-2">
+                                            <div class="w-full h-1.5 bg-white/40 rounded-full"></div>
+                                            <div class="w-3/4 h-1.5 bg-white/30 rounded-full mx-auto"></div>
+                                            <div class="w-full h-1.5 bg-white/40 rounded-full"></div>
+                                        </div>
+                                    </div>
+
+                                    <div class="absolute top-3 right-3 w-10 h-10 bg-white/20 rounded-full flex items-center justify-center font-black text-white text-lg backdrop-blur-sm border-2 border-white/40">
+                                        ${i + 1}
+                                    </div>
                                 </div>
                             ` : `
-                                <div class="w-full h-full flex items-center justify-center p-4 border-4 border-gray-200">
-                                    <div class="text-6xl animate-bounce">❓</div>
+                                <div class="w-full h-full flex flex-col items-center justify-center p-6 relative overflow-hidden" style="background: linear-gradient(135deg, ${cor.corClara} 0%, white 100%);">
+                                    <div class="relative z-10">
+                                        <div class="text-7xl animate-bounce mb-4">❓</div>
+                                        <div class="font-bold" style="color: ${cor.cor};">Pergunta</div>
+                                        <div class="font-bold" style="color: ${cor.cor};">#${i + 1}</div>
+                                    </div>
                                 </div>
                             `}
                         </div>
+
+                        ${!selecionada && state.cartaSelecionada === null ? `
+                            <div class="absolute -bottom-8 left-1/2 -translate-x-1/2 opacity-0 group-hover:opacity-100 transition-opacity">
+                                <div class="px-4 py-2 rounded-full text-sm font-bold whitespace-nowrap text-white shadow-lg" style="background-color: #2C3E7E;">
+                                    Clique aqui! 👆
+                                </div>
+                            </div>
+                        ` : ''}
                     </button>
                 `;
             }
 
             return `
-                <div class="min-h-screen bg-gradient-to-br from-purple-600 via-pink-500 to-orange-400 flex items-center justify-center p-4">
-                    <div class="bg-white rounded-3xl shadow-2xl p-8 max-w-4xl w-full">
-                        <div class="flex justify-between items-center mb-8">
-                            <div>
-                                <div class="text-sm text-gray-500">Rodada ${state.rodada}</div>
-                                <div class="text-2xl font-bold text-gray-800">🏆 ${state.pontos} pontos</div>
-                            </div>
-                            <div class="px-6 py-3 rounded-full text-white font-bold text-lg" style="background-color: ${cor.cor}">
-                                ${state.categoriaAtual}
-                            </div>
-                        </div>
+                <div class="min-h-screen bg-pattern relative overflow-hidden">
+                    <div class="absolute inset-0 bg-overlay"></div>
 
-                        <h2 class="text-3xl font-bold text-center mb-4 text-gray-800">🎴 Escolha uma Carta</h2>
-                        <p class="text-center text-gray-600 mb-8">Clique em uma carta para revelar a pergunta</p>
+                    <div class="relative z-10 min-h-screen flex items-center justify-center p-4">
+                        <div class="bg-white rounded-3xl shadow-2xl p-8 max-w-5xl w-full border-4" style="border-color: #1D9BF0;">
+                            <div class="flex justify-between items-center mb-8">
+                                <div class="flex items-center gap-4">
+                                    <div class="p-3 rounded-xl shadow-lg" style="background-color: #F77F00;">
+                                        <div class="w-6 h-6 text-white">${icons.trophy}</div>
+                                    </div>
+                                    <div>
+                                        <div class="text-sm font-semibold text-gray-500">Rodada ${state.rodada}</div>
+                                        <div class="text-3xl font-black" style="color: #2C3E7E;">${state.pontos} pts</div>
+                                    </div>
+                                </div>
+                                <div class="px-8 py-4 rounded-2xl text-white font-black text-xl shadow-xl flex items-center gap-3" style="background-color: ${cor.cor};">
+                                    <span class="text-3xl">${cor.emoji}</span>
+                                    <span>${state.categoriaAtual}</span>
+                                </div>
+                            </div>
 
-                        <div class="flex justify-center gap-4 mb-8 flex-wrap">
-                            ${cartasHTML}
+                            <div class="text-center mb-4">
+                                <h2 class="text-5xl font-black mb-3" style="color: #2C3E7E;">Escolha uma Carta</h2>
+                                <p class="text-lg font-medium flex items-center justify-center gap-2" style="color: #F77F00;">
+                                    <div class="w-5 h-5">${icons.sparkles}</div>
+                                    Clique em uma carta para revelar a pergunta
+                                    <div class="w-5 h-5">${icons.sparkles}</div>
+                                </p>
+                            </div>
+
+                            <div class="flex justify-center gap-6 mb-8 flex-wrap perspective-1000">
+                                ${cartasHTML}
+                            </div>
+
+                            ${state.cartaSelecionada === null ? `
+                                <div class="text-center">
+                                    <div class="inline-block px-6 py-3 rounded-full border-2" style="background-color: #E0F2FE; border-color: #1D9BF0;">
+                                        <p class="font-semibold flex items-center gap-2" style="color: #2C3E7E;">
+                                            <div class="w-4 h-4" style="color: #F77F00;">${icons.sparkles}</div>
+                                            Passe o mouse sobre as cartas para ver o efeito!
+                                            <div class="w-4 h-4" style="color: #F77F00;">${icons.sparkles}</div>
+                                        </p>
+                                    </div>
+                                </div>
+                            ` : ''}
                         </div>
                     </div>
                 </div>
@@ -382,39 +614,47 @@
 
         function telaQuiz() {
             const cor = CATEGORIAS[state.categoriaAtual];
-            const pergunta = state.perguntaAtual;
             
             let opcoesHTML = '';
-            pergunta.opcoes.forEach((opcao, index) => {
-                const isCorreta = index === pergunta.correta;
+            state.perguntaAtual.opcoes.forEach((opcao, index) => {
+                const isCorreta = index === state.perguntaAtual.correta;
                 const isSelecionada = index === state.respostaSelecionada;
                 
-                let bgColor = 'bg-gray-100 hover:bg-gray-200';
-                let borderColor = 'border-gray-300';
-                let textColor = 'text-gray-800';
+                let bgColor = '#F8F9FA';
+                let borderColor = '#DEE2E6';
+                let textColor = '#2C3E7E';
                 let icon = '';
                 
                 if (state.mostrarResultado) {
                     if (isCorreta) {
-                        bgColor = 'bg-green-100';
-                        borderColor = 'border-green-500';
-                        textColor = 'text-green-800';
-                        icon = '<span class="text-2xl">✓</span>';
+                        bgColor = '#D1FAE5';
+                        borderColor = '#2A9D8F';
+                        textColor = '#064E3B';
+                        icon = `<div class="flex-shrink-0 w-12 h-12 rounded-full flex items-center justify-center shadow-lg" style="background-color: #2A9D8F;"><div class="w-7 h-7 text-white">${icons.check}</div></div>`;
                     } else if (isSelecionada) {
-                        bgColor = 'bg-red-100';
-                        borderColor = 'border-red-500';
-                        textColor = 'text-red-800';
-                        icon = '<span class="text-2xl">✗</span>';
+                        bgColor = '#FEE2E2';
+                        borderColor = '#E63946';
+                        textColor = '#7F1D1D';
+                        icon = `<div class="flex-shrink-0 w-12 h-12 rounded-full flex items-center justify-center shadow-lg" style="background-color: #E63946;"><div class="w-7 h-7 text-white">${icons.x}</div></div>`;
                     }
-                } else if (isSelecionada) {
-                    bgColor = 'bg-blue-100';
-                    borderColor = 'border-blue-500';
                 }
 
+                const letterBg = state.mostrarResultado && isCorreta ? '#2A9D8F' : state.mostrarResultado && isSelecionada ? '#E63946' : '#1D9BF0';
+
                 opcoesHTML += `
-                    <button onclick="${state.mostrarResultado ? '' : `responder(${index})`}" ${state.mostrarResultado ? 'disabled' : ''} class="${bgColor} ${textColor} border-2 ${borderColor} rounded-xl p-4 text-left font-medium transition-all transform hover:scale-105 disabled:cursor-not-allowed">
-                        <div class="flex items-center justify-between">
-                            <span>${opcao}</span>
+                    <button
+                        onclick="${state.mostrarResultado ? '' : `responder(${index})`}"
+                        ${state.mostrarResultado ? 'disabled' : ''}
+                        class="rounded-2xl p-5 text-left font-bold transition-all duration-300 transform hover:scale-105 disabled:cursor-not-allowed disabled:transform-none relative overflow-hidden shadow-lg hover:shadow-xl border-4"
+                        style="background-color: ${bgColor}; border-color: ${borderColor}; color: ${textColor};"
+                    >
+                        <div class="relative flex items-center justify-between gap-4">
+                            <div class="flex items-center gap-3 flex-1">
+                                <div class="w-10 h-10 rounded-full flex items-center justify-center font-black text-lg flex-shrink-0 text-white" style="background-color: ${letterBg};">
+                                    ${String.fromCharCode(65 + index)}
+                                </div>
+                                <span class="text-lg leading-snug">${opcao}</span>
+                            </div>
                             ${icon}
                         </div>
                     </button>
@@ -422,61 +662,102 @@
             });
 
             return `
-                <div class="min-h-screen bg-gradient-to-br from-purple-600 via-pink-500 to-orange-400 flex items-center justify-center p-4">
-                    <div class="bg-white rounded-3xl shadow-2xl p-8 max-w-3xl w-full">
-                        <div class="flex justify-between items-center mb-8">
-                            <div>
-                                <div class="text-sm text-gray-500">Rodada ${state.rodada}</div>
-                                <div class="text-2xl font-bold text-gray-800">🏆 ${state.pontos} pontos</div>
-                            </div>
-                            <div class="px-4 py-2 rounded-full text-white font-bold" style="background-color: ${cor.cor}">
-                                ${state.categoriaAtual}
-                            </div>
-                        </div>
+                <div class="min-h-screen bg-pattern relative overflow-hidden">
+                    <div class="absolute inset-0 bg-overlay"></div>
 
-                        <div class="rounded-2xl p-6 mb-8" style="background-color: ${cor.corClara}">
-                            <h2 class="text-2xl font-bold text-gray-800 text-center">${pergunta.pergunta}</h2>
-                        </div>
-
-                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-8">
-                            ${opcoesHTML}
-                        </div>
-
-                        ${state.mostrarResultado ? `
-                            <div class="space-y-4">
-                                <div class="rounded-2xl p-6 ${state.respostaSelecionada === pergunta.correta ? 'bg-green-100 border-2 border-green-500' : 'bg-red-100 border-2 border-red-500'}">
-                                    <div class="flex items-center gap-3 mb-3">
-                                        <div class="w-12 h-12 ${state.respostaSelecionada === pergunta.correta ? 'bg-green-500' : 'bg-red-500'} rounded-full flex items-center justify-center text-white text-2xl">
-                                            ${state.respostaSelecionada === pergunta.correta ? '✓' : '✗'}
-                                        </div>
-                                        <div>
-                                            <div class="text-2xl font-bold ${state.respostaSelecionada === pergunta.correta ? 'text-green-800' : 'text-red-800'}">
-                                                ${state.respostaSelecionada === pergunta.correta ? 'Correto!' : 'Ops!'}
-                                            </div>
-                                            <div class="${state.respostaSelecionada === pergunta.correta ? 'text-green-700' : 'text-red-700'}">
-                                                ${state.respostaSelecionada === pergunta.correta ? '+100 pontos' : 'Tente novamente na próxima'}
-                                            </div>
-                                        </div>
+                    <div class="relative z-10 min-h-screen flex items-center justify-center p-4">
+                        <div class="bg-white rounded-3xl shadow-2xl p-8 max-w-4xl w-full border-4" style="border-color: #1D9BF0;">
+                            <div class="flex justify-between items-center mb-8">
+                                <div class="flex items-center gap-3">
+                                    <div class="p-3 rounded-xl shadow-lg" style="background-color: #F77F00;">
+                                        <div class="w-6 h-6 text-white">${icons.trophy}</div>
                                     </div>
-                                    <div class="text-gray-700 bg-white/50 rounded-lg p-3">
-                                        <strong>Explicação:</strong> ${pergunta.explicacao}
+                                    <div>
+                                        <div class="text-sm font-semibold text-gray-500">Rodada ${state.rodada}</div>
+                                        <div class="text-3xl font-black" style="color: #2C3E7E;">${state.pontos} pts</div>
                                     </div>
                                 </div>
-
-                                <button onclick="proximaRodada()" class="w-full bg-gradient-to-r from-purple-600 to-pink-600 text-white py-4 rounded-xl font-bold text-lg hover:from-purple-700 hover:to-pink-700 transition-all transform hover:scale-105 shadow-lg">
-                                    Próxima Rodada →
-                                </button>
+                                <div class="px-6 py-3 rounded-2xl text-white font-bold text-lg shadow-lg flex items-center gap-2" style="background-color: ${cor.cor};">
+                                    <span class="text-2xl">${cor.emoji}</span>
+                                    <span>${state.categoriaAtual}</span>
+                                </div>
                             </div>
-                        ` : ''}
+
+                            <div class="relative mb-8">
+                                <div class="rounded-3xl p-8 shadow-2xl border-4" style="background-color: ${cor.corClara}; border-color: white;">
+                                    <div class="flex items-start gap-4">
+                                        <div class="p-4 rounded-2xl shadow-lg flex-shrink-0" style="background-color: ${cor.cor};">
+                                            <span class="text-5xl">${cor.emoji}</span>
+                                        </div>
+                                        <div class="flex-1">
+                                            <div class="text-xs font-bold mb-2 flex items-center gap-2" style="color: #1D9BF0;">
+                                                <div class="w-2 h-2 rounded-full animate-pulse" style="background-color: #1D9BF0;"></div>
+                                                PERGUNTA ${state.rodada}
+                                            </div>
+                                            <h2 class="text-3xl font-black leading-tight" style="color: #2C3E7E;">
+                                                ${state.perguntaAtual.pergunta}
+                                            </h2>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-8">
+                                ${opcoesHTML}
+                            </div>
+
+                            ${state.mostrarResultado ? `
+                                <div class="space-y-5 animate-fadeIn">
+                                    <div class="rounded-3xl p-8 border-4 shadow-2xl" style="background-color: ${state.respostaSelecionada === state.perguntaAtual.correta ? '#D1FAE5' : '#FEE2E2'}; border-color: ${state.respostaSelecionada === state.perguntaAtual.correta ? '#2A9D8F' : '#E63946'};">
+                                        <div class="flex items-center gap-4 mb-6">
+                                            <div class="w-16 h-16 rounded-2xl flex items-center justify-center shadow-xl" style="background-color: ${state.respostaSelecionada === state.perguntaAtual.correta ? '#2A9D8F' : '#E63946'};">
+                                                <div class="w-10 h-10 text-white">${state.respostaSelecionada === state.perguntaAtual.correta ? icons.check : icons.x}</div>
+                                            </div>
+                                            <div>
+                                                <div class="text-4xl font-black" style="color: ${state.respostaSelecionada === state.perguntaAtual.correta ? '#064E3B' : '#7F1D1D'};">
+                                                    ${state.respostaSelecionada === state.perguntaAtual.correta ? 'Parabéns! 🎉' : 'Quase lá! 💪'}
+                                                </div>
+                                                <div class="text-lg font-bold" style="color: ${state.respostaSelecionada === state.perguntaAtual.correta ? '#065F46' : '#991B1B'};">
+                                                    ${state.respostaSelecionada === state.perguntaAtual.correta ? '+100 pontos!' : 'Continue tentando!'}
+                                                </div>
+                                            </div>
+                                        </div>
+                                        
+                                        <div class="bg-white/70 backdrop-blur-sm rounded-2xl p-6 border-2 border-white">
+                                            <div class="flex items-start gap-3">
+                                                <div class="flex-shrink-0 w-10 h-10 rounded-full flex items-center justify-center" style="background-color: ${state.respostaSelecionada === state.perguntaAtual.correta ? '#D1FAE5' : '#FEE2E2'};">
+                                                    <div class="w-6 h-6" style="color: ${state.respostaSelecionada === state.perguntaAtual.correta ? '#2A9D8F' : '#E63946'};">${icons.sparkles}</div>
+                                                </div>
+                                                <div class="flex-1">
+                                                    <div class="font-black mb-2" style="color: #2C3E7E;">Você sabia?</div>
+                                                    <div class="leading-relaxed text-lg" style="color: #495057;">
+                                                        ${state.perguntaAtual.explicacao}
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <button
+                                        onclick="proximaRodada()"
+                                        class="w-full text-white py-6 rounded-2xl font-black text-xl shadow-2xl transition-all duration-300 hover:scale-105"
+                                        style="background: linear-gradient(135deg, #1D9BF0 0%, #F77F00 100%);"
+                                    >
+                                        <div class="flex items-center justify-center gap-3">
+                                            <div class="w-6 h-6">${icons.zap}</div>
+                                            <span>Próxima Rodada</span>
+                                            <div class="w-6 h-6">${icons.zap}</div>
+                                        </div>
+                                    </button>
+                                </div>
+                            ` : ''}
+                        </div>
                     </div>
                 </div>
             `;
         }
 
-        function attachEventListeners() {
-            // Eventos já estão inline nos botões
-        }
-
+        // Funções de controle
         window.comecarJogo = () => {
             state.fase = 'roleta';
             render();
@@ -486,8 +767,6 @@
             if (state.girando) return;
             
             state.girando = true;
-            render();
-            
             const categorias = Object.keys(CATEGORIAS).filter(cat => PERGUNTAS[cat] && PERGUNTAS[cat].length > 0);
             const catEscolhida = categorias[Math.floor(Math.random() * categorias.length)];
             
@@ -496,15 +775,24 @@
             const anguloFinal = anguloFatia * categorias.indexOf(catEscolhida);
             const anguloTotal = (rotacoesCompletas * 360) + anguloFinal;
             
-            state.anguloRoleta = anguloTotal;
+            // Primeiro render para mostrar estado "girando"
             render();
+            
+            // Pequeno delay para garantir que o DOM foi atualizado
+            setTimeout(() => {
+                const svg = document.getElementById('roletaSvg');
+                if (svg) {
+                    svg.style.transform = `rotate(${anguloTotal}deg)`;
+                }
+                state.anguloRoleta = anguloTotal;
+            }, 50);
             
             setTimeout(() => {
                 state.girando = false;
                 state.categoriaAtual = catEscolhida;
                 state.fase = 'escolhaCarta';
                 render();
-            }, 3500);
+            }, 3550);
         };
 
         window.escolherCarta = (index) => {
@@ -545,7 +833,7 @@
             render();
         };
 
-        // Iniciar
+        // Iniciar o jogo
         render();
     </script>
 </body>
