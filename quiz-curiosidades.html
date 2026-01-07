@@ -1,0 +1,552 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Quiz das Curiosidades - Guia dos Curiosos</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @keyframes bounce {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-10px); }
+        }
+        .animate-bounce {
+            animation: bounce 1s infinite;
+        }
+        
+        @keyframes spin {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(360deg); }
+        }
+        .animate-spin {
+            animation: spin 1s linear infinite;
+        }
+
+        .card-flip {
+            transform: rotateY(180deg);
+        }
+
+        .transition-transform-3s {
+            transition: transform 3.5s cubic-bezier(0.17, 0.67, 0.12, 0.99);
+        }
+    </style>
+</head>
+<body>
+    <div id="app"></div>
+
+    <script type="module">
+        // Dados do jogo
+        const CATEGORIAS = {
+            'Animais': { cor: '#FF6B6B', corClara: '#FFE0E0' },
+            'Cultura e Entretenimento': { cor: '#9B59B6', corClara: '#E8D4F1' },
+            'Ciência e Saúde': { cor: '#3498DB', corClara: '#D6EAF8' },
+            'Datas e Festas': { cor: '#F39C12', corClara: '#FCF3CF' },
+            'Esportes': { cor: '#27AE60', corClara: '#D5F4E6' },
+            'Geek e Mundo Nerd': { cor: '#E74C3C', corClara: '#FADBD8' },
+            'Livros': { cor: '#8B4513', corClara: '#F0E5D8' },
+            'Variedades': { cor: '#1ABC9C', corClara: '#D0F0EA' }
+        };
+
+        const PERGUNTAS = {
+            'Ciência e Saúde': [
+                {
+                    pergunta: 'Por que o céu é azul?',
+                    opcoes: ['Reflexo dos oceanos', 'Dispersão de Rayleigh', 'Gases azuis na atmosfera', 'Ilusão de ótica'],
+                    correta: 1,
+                    explicacao: 'O céu é azul devido à dispersão de Rayleigh. A luz azul tem comprimento de onda menor e se espalha mais que outras cores!'
+                },
+                {
+                    pergunta: 'Água pura conduz eletricidade?',
+                    opcoes: ['Sim, muito bem', 'Não, é péssima condutora', 'Só água salgada conduz', 'Só água quente conduz'],
+                    correta: 1,
+                    explicacao: 'Água pura (H2O) é péssima condutora! São os minerais dissolvidos que tornam a água condutora.'
+                },
+                {
+                    pergunta: 'Quanto pesa uma nuvem comum?',
+                    opcoes: ['Cerca de 100 kg', 'Cerca de 10.000 kg', 'Cerca de 500.000 kg', 'Nuvens não pesam nada'],
+                    correta: 2,
+                    explicacao: 'Uma nuvem cumulus média pesa cerca de 500.000 kg - equivalente a 100 elefantes!'
+                },
+                {
+                    pergunta: 'Bananas são radioativas?',
+                    opcoes: ['Sim, contêm potássio-40', 'Não, isso é mito', 'Só bananas verdes', 'Só bananas orgânicas'],
+                    correta: 0,
+                    explicacao: 'Sim! Bananas contêm potássio-40, um isótopo radioativo natural. Mas é completamente inofensivo!'
+                },
+                {
+                    pergunta: 'Por que bocejamos?',
+                    opcoes: ['Por falta de oxigênio', 'Por tédio apenas', 'Para resfriar o cérebro', 'Por cansaço muscular'],
+                    correta: 2,
+                    explicacao: 'Bocejamos principalmente para resfriar o cérebro e aumentar o estado de alerta!'
+                }
+            ],
+            'Animais': [
+                {
+                    pergunta: 'Gatos sempre caem de pé?',
+                    opcoes: ['Sim, sempre', 'Não, é mito', 'Sim, por reflexo de endireitamento', 'Só gatos adultos'],
+                    correta: 2,
+                    explicacao: 'Sim! Gatos têm o reflexo de endireitamento graças à coluna flexível e ausência de clavícula funcional.'
+                },
+                {
+                    pergunta: 'Quantos dentes um tubarão pode ter ao longo da vida?',
+                    opcoes: ['Cerca de 1.000', 'Cerca de 5.000', 'Cerca de 30.000', 'Cerca de 100.000'],
+                    correta: 2,
+                    explicacao: 'Tubarões podem perder e repor mais de 30.000 dentes ao longo da vida!'
+                },
+                {
+                    pergunta: 'Polvos têm quantos corações?',
+                    opcoes: ['Um coração', 'Dois corações', 'Três corações', 'Cinco corações'],
+                    correta: 2,
+                    explicacao: 'Polvos têm três corações: dois bombeiam sangue pelas brânquias e um para o resto do corpo!'
+                },
+                {
+                    pergunta: 'Por que camaleões mudam de cor?',
+                    opcoes: ['Para camuflagem apenas', 'Para comunicação e temperatura', 'Por medo', 'Por idade'],
+                    correta: 1,
+                    explicacao: 'Camaleões mudam de cor principalmente para comunicação e regulação térmica, não camuflagem!'
+                },
+                {
+                    pergunta: 'Por que chocolate faz mal para cachorros?',
+                    opcoes: ['Por causa do açúcar', 'Por causa da teobromina', 'Por causa da gordura', 'Não faz mal'],
+                    correta: 1,
+                    explicacao: 'A teobromina do cacau é tóxica para cães, pois eles metabolizam muito lentamente!'
+                }
+            ],
+            'Cultura e Entretenimento': [
+                {
+                    pergunta: 'A Coca-Cola original continha cocaína?',
+                    opcoes: ['Não, é mito urbano', 'Sim, até 1903', 'Só na versão europeia', 'Sim, até hoje'],
+                    correta: 1,
+                    explicacao: 'Sim! A fórmula original de 1886 continha extrato de folha de coca. Foi removido em 1903.'
+                },
+                {
+                    pergunta: 'Qual foi a primeira fotografia do mundo?',
+                    opcoes: ['Retrato de família', 'Paisagem de guerra', 'Vista de uma janela', 'Autorretrato'],
+                    correta: 2,
+                    explicacao: 'A primeira foto foi "Vista da Janela em Le Gras" por Niépce em 1826/1827, com 8 horas de exposição!'
+                }
+            ],
+            'Geek e Mundo Nerd': [
+                {
+                    pergunta: 'Quando nasceu a Internet?',
+                    opcoes: ['1969 (ARPANET)', '1983 (TCP/IP)', '1991 (WWW)', '1995 (Comercial)'],
+                    correta: 0,
+                    explicacao: 'A Internet nasceu em 1969 com a ARPANET. A primeira mensagem foi "LO" (tentaram "LOGIN" mas travou)!'
+                },
+                {
+                    pergunta: 'O que é um buraco negro?',
+                    opcoes: ['Buraco no espaço', 'Estrela muito escura', 'Região de gravidade extrema', 'Portal dimensional'],
+                    correta: 2,
+                    explicacao: 'Buraco negro é uma região onde a gravidade é tão intensa que nem a luz escapa!'
+                }
+            ],
+            'Variedades': [
+                {
+                    pergunta: 'De onde vem o nome "Brasil"?',
+                    opcoes: ['Nome indígena', 'Do pau-brasil', 'Homenagem a navegador', 'Palavra portuguesa antiga'],
+                    correta: 1,
+                    explicacao: 'O nome Brasil vem do pau-brasil, árvore abundante na costa, cuja madeira era valiosa na Europa!'
+                },
+                {
+                    pergunta: 'Raios podem cair no mesmo lugar duas vezes?',
+                    opcoes: ['Não, é impossível', 'Sim, frequentemente', 'Só em tempestades fortes', 'Só no oceano'],
+                    correta: 1,
+                    explicacao: 'Sim! O Empire State Building é atingido cerca de 25 vezes por ano!'
+                },
+                {
+                    pergunta: 'Mel estraga?',
+                    opcoes: ['Sim, em 1 ano', 'Não, nunca estraga', 'Só mel de abelha', 'Só se aberto'],
+                    correta: 1,
+                    explicacao: 'Mel nunca estraga! Foi encontrado mel comestível em tumbas egípcias com 3.000 anos!'
+                },
+                {
+                    pergunta: 'Compartilhamos 50% do DNA com bananas?',
+                    opcoes: ['Não, isso é absurdo', 'Sim, é verdade', 'Só 10%', 'Só 90%'],
+                    correta: 1,
+                    explicacao: 'Sim! Compartilhamos 50-60% dos genes com bananas - são genes de funções celulares básicas!'
+                }
+            ]
+        };
+
+        // Estado do jogo
+        let state = {
+            fase: 'inicio',
+            girando: false,
+            categoriaAtual: null,
+            cartaSelecionada: null,
+            perguntaAtual: null,
+            respostaSelecionada: null,
+            mostrarResultado: false,
+            pontos: 0,
+            rodada: 1,
+            acertos: 0,
+            anguloRoleta: 0
+        };
+
+        function render() {
+            const app = document.getElementById('app');
+            app.innerHTML = getHTML();
+            attachEventListeners();
+        }
+
+        function getHTML() {
+            if (state.fase === 'inicio') return telaInicio();
+            if (state.fase === 'roleta') return telaRoleta();
+            if (state.fase === 'escolhaCarta') return telaEscolhaCarta();
+            if (state.fase === 'quiz') return telaQuiz();
+        }
+
+        function telaInicio() {
+            return `
+                <div class="min-h-screen bg-gradient-to-br from-purple-600 via-pink-500 to-orange-400 flex items-center justify-center p-4">
+                    <div class="bg-white rounded-3xl shadow-2xl p-8 max-w-md w-full text-center">
+                        <div class="mb-6">
+                            <div class="text-6xl mb-4">✨</div>
+                            <h1 class="text-4xl font-bold text-gray-800 mb-2">Quiz das Curiosidades</h1>
+                            <p class="text-gray-600">Gire a roleta, escolha uma carta e teste seu conhecimento!</p>
+                        </div>
+                        
+                        <div class="bg-gradient-to-r from-purple-100 to-pink-100 rounded-2xl p-6 mb-6">
+                            <h2 class="text-lg font-bold text-gray-800 mb-3">Como Jogar:</h2>
+                            <div class="text-left space-y-2 text-sm text-gray-700">
+                                <div class="flex items-start gap-2">
+                                    <span class="bg-purple-500 text-white rounded-full w-6 h-6 flex items-center justify-center flex-shrink-0 text-xs font-bold">1</span>
+                                    <span>Gire a roleta das categorias</span>
+                                </div>
+                                <div class="flex items-start gap-2">
+                                    <span class="bg-purple-500 text-white rounded-full w-6 h-6 flex items-center justify-center flex-shrink-0 text-xs font-bold">2</span>
+                                    <span>Escolha uma carta às cegas</span>
+                                </div>
+                                <div class="flex items-start gap-2">
+                                    <span class="bg-purple-500 text-white rounded-full w-6 h-6 flex items-center justify-center flex-shrink-0 text-xs font-bold">3</span>
+                                    <span>Responda a pergunta</span>
+                                </div>
+                                <div class="flex items-start gap-2">
+                                    <span class="bg-purple-500 text-white rounded-full w-6 h-6 flex items-center justify-center flex-shrink-0 text-xs font-bold">4</span>
+                                    <span>Ganhe 100 pontos por acerto!</span>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <button onclick="comecarJogo()" class="w-full bg-gradient-to-r from-purple-600 to-pink-600 text-white py-4 rounded-xl font-bold text-lg hover:from-purple-700 hover:to-pink-700 transition-all transform hover:scale-105 shadow-lg">
+                            Começar Jogo! 🎮
+                        </button>
+                    </div>
+                </div>
+            `;
+        }
+
+        function telaRoleta() {
+            const categorias = Object.keys(CATEGORIAS).filter(cat => PERGUNTAS[cat] && PERGUNTAS[cat].length > 0);
+            const numCategorias = categorias.length;
+            const anguloFatia = 360 / numCategorias;
+            
+            let fatiasSVG = '';
+            categorias.forEach((cat, index) => {
+                const startAngle = (anguloFatia * index - 90) * (Math.PI / 180);
+                const endAngle = (anguloFatia * (index + 1) - 90) * (Math.PI / 180);
+                const middleAngle = (startAngle + endAngle) / 2;
+                
+                const x1 = 200 + 190 * Math.cos(startAngle);
+                const y1 = 200 + 190 * Math.sin(startAngle);
+                const x2 = 200 + 190 * Math.cos(endAngle);
+                const y2 = 200 + 190 * Math.sin(endAngle);
+                
+                const largeArcFlag = anguloFatia > 180 ? 1 : 0;
+                
+                const pathData = `M 200 200 L ${x1} ${y1} A 190 190 0 ${largeArcFlag} 1 ${x2} ${y2} Z`;
+                
+                const textRadius = 130;
+                const textX = 200 + textRadius * Math.cos(middleAngle);
+                const textY = 200 + textRadius * Math.sin(middleAngle);
+                const textAngle = (anguloFatia * index + anguloFatia / 2);
+                
+                const palavras = cat.split(' ');
+                let tspans = '';
+                palavras.forEach((palavra, i) => {
+                    tspans += `<tspan x="${textX}" dy="${i === 0 ? 0 : 16}">${palavra}</tspan>`;
+                });
+                
+                fatiasSVG += `
+                    <g>
+                        <path d="${pathData}" fill="${CATEGORIAS[cat].cor}" stroke="white" stroke-width="3" />
+                        <text x="${textX}" y="${textY}" fill="white" font-size="14" font-weight="bold" text-anchor="middle" dominant-baseline="middle" transform="rotate(${textAngle}, ${textX}, ${textY})" style="text-shadow: 1px 1px 2px rgba(0,0,0,0.3)">
+                            ${tspans}
+                        </text>
+                    </g>
+                `;
+            });
+
+            return `
+                <div class="min-h-screen bg-gradient-to-br from-purple-600 via-pink-500 to-orange-400 flex items-center justify-center p-4">
+                    <div class="bg-white rounded-3xl shadow-2xl p-8 max-w-2xl w-full">
+                        <div class="flex justify-between items-center mb-8">
+                            <div>
+                                <div class="text-sm text-gray-500">Rodada ${state.rodada}</div>
+                                <div class="text-2xl font-bold text-gray-800">🏆 ${state.pontos} pontos</div>
+                            </div>
+                            <div class="text-right">
+                                <div class="text-sm text-gray-500">Acertos</div>
+                                <div class="text-2xl font-bold text-green-600">${state.acertos}</div>
+                            </div>
+                        </div>
+
+                        <h2 class="text-3xl font-bold text-center mb-4 text-gray-800">🎡 Gire a Roleta!</h2>
+                        <p class="text-center text-gray-600 mb-8">Clique na roleta ou no botão para girar</p>
+
+                        <div class="relative w-96 h-96 mx-auto mb-8">
+                            <div class="absolute top-0 left-1/2 -translate-x-1/2 -translate-y-3 z-20 pointer-events-none">
+                                <div class="relative">
+                                    <div class="w-0 h-0 border-l-[20px] border-l-transparent border-r-[20px] border-r-transparent border-t-[35px] border-t-red-600 drop-shadow-2xl"></div>
+                                    <div class="absolute -bottom-2 left-1/2 -translate-x-1/2 w-8 h-8 bg-red-600 rounded-full border-4 border-white shadow-lg"></div>
+                                </div>
+                            </div>
+
+                            <div class="relative w-full h-full ${state.girando ? '' : 'cursor-pointer hover:scale-105 transition-transform'}" onclick="${state.girando ? '' : 'girarRoleta()'}">
+                                <svg viewBox="0 0 400 400" class="w-full h-full ${state.girando ? 'transition-transform-3s' : 'transition-transform duration-300'}" style="transform: rotate(${state.anguloRoleta}deg)">
+                                    <circle cx="200" cy="200" r="195" fill="white" stroke="#333" stroke-width="3" />
+                                    ${fatiasSVG}
+                                    <circle cx="200" cy="200" r="50" fill="white" stroke="#333" stroke-width="3" />
+                                    <circle cx="200" cy="200" r="45" fill="#f8f9fa" />
+                                    <text x="200" y="210" font-size="30" text-anchor="middle">${state.girando ? '' : '🎲'}</text>
+                                </svg>
+                            </div>
+                        </div>
+
+                        ${state.categoriaAtual && !state.girando ? `
+                            <div class="text-center mb-6 animate-bounce">
+                                <div class="inline-block px-8 py-4 rounded-full text-white font-bold text-xl shadow-lg" style="background-color: ${CATEGORIAS[state.categoriaAtual].cor}">
+                                    ✨ ${state.categoriaAtual} ✨
+                                </div>
+                            </div>
+                        ` : ''}
+
+                        <button onclick="girarRoleta()" ${state.girando ? 'disabled' : ''} class="w-full bg-gradient-to-r from-purple-600 to-pink-600 text-white py-4 rounded-xl font-bold text-lg hover:from-purple-700 hover:to-pink-700 transition-all transform hover:scale-105 shadow-lg disabled:opacity-50 disabled:cursor-not-allowed">
+                            ${state.girando ? 'Girando... 🎡' : 'Girar Roleta! 🎲'}
+                        </button>
+                    </div>
+                </div>
+            `;
+        }
+
+        function telaEscolhaCarta() {
+            const cor = CATEGORIAS[state.categoriaAtual];
+            const numCartas = Math.min(5, PERGUNTAS[state.categoriaAtual]?.length || 5);
+
+            let cartasHTML = '';
+            for (let i = 0; i < numCartas; i++) {
+                const selecionada = state.cartaSelecionada === i;
+                cartasHTML += `
+                    <button onclick="escolherCarta(${i})" ${state.cartaSelecionada !== null ? 'disabled' : ''} class="relative group">
+                        <div class="w-32 h-48 rounded-xl shadow-lg transition-all duration-300 ${selecionada ? 'transform scale-110' : 'hover:scale-110 hover:-translate-y-2'}" style="background-color: ${selecionada ? '#fff' : cor.cor}">
+                            ${!selecionada ? `
+                                <div class="w-full h-full flex flex-col items-center justify-center p-4">
+                                    <div class="text-4xl text-white mb-2">✨</div>
+                                    <div class="w-full h-1 bg-white/30 rounded mb-2"></div>
+                                    <div class="w-3/4 h-1 bg-white/30 rounded mb-2"></div>
+                                    <div class="w-full h-1 bg-white/30 rounded"></div>
+                                </div>
+                            ` : `
+                                <div class="w-full h-full flex items-center justify-center p-4 border-4 border-gray-200">
+                                    <div class="text-6xl animate-bounce">❓</div>
+                                </div>
+                            `}
+                        </div>
+                    </button>
+                `;
+            }
+
+            return `
+                <div class="min-h-screen bg-gradient-to-br from-purple-600 via-pink-500 to-orange-400 flex items-center justify-center p-4">
+                    <div class="bg-white rounded-3xl shadow-2xl p-8 max-w-4xl w-full">
+                        <div class="flex justify-between items-center mb-8">
+                            <div>
+                                <div class="text-sm text-gray-500">Rodada ${state.rodada}</div>
+                                <div class="text-2xl font-bold text-gray-800">🏆 ${state.pontos} pontos</div>
+                            </div>
+                            <div class="px-6 py-3 rounded-full text-white font-bold text-lg" style="background-color: ${cor.cor}">
+                                ${state.categoriaAtual}
+                            </div>
+                        </div>
+
+                        <h2 class="text-3xl font-bold text-center mb-4 text-gray-800">🎴 Escolha uma Carta</h2>
+                        <p class="text-center text-gray-600 mb-8">Clique em uma carta para revelar a pergunta</p>
+
+                        <div class="flex justify-center gap-4 mb-8 flex-wrap">
+                            ${cartasHTML}
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+
+        function telaQuiz() {
+            const cor = CATEGORIAS[state.categoriaAtual];
+            const pergunta = state.perguntaAtual;
+            
+            let opcoesHTML = '';
+            pergunta.opcoes.forEach((opcao, index) => {
+                const isCorreta = index === pergunta.correta;
+                const isSelecionada = index === state.respostaSelecionada;
+                
+                let bgColor = 'bg-gray-100 hover:bg-gray-200';
+                let borderColor = 'border-gray-300';
+                let textColor = 'text-gray-800';
+                let icon = '';
+                
+                if (state.mostrarResultado) {
+                    if (isCorreta) {
+                        bgColor = 'bg-green-100';
+                        borderColor = 'border-green-500';
+                        textColor = 'text-green-800';
+                        icon = '<span class="text-2xl">✓</span>';
+                    } else if (isSelecionada) {
+                        bgColor = 'bg-red-100';
+                        borderColor = 'border-red-500';
+                        textColor = 'text-red-800';
+                        icon = '<span class="text-2xl">✗</span>';
+                    }
+                } else if (isSelecionada) {
+                    bgColor = 'bg-blue-100';
+                    borderColor = 'border-blue-500';
+                }
+
+                opcoesHTML += `
+                    <button onclick="${state.mostrarResultado ? '' : `responder(${index})`}" ${state.mostrarResultado ? 'disabled' : ''} class="${bgColor} ${textColor} border-2 ${borderColor} rounded-xl p-4 text-left font-medium transition-all transform hover:scale-105 disabled:cursor-not-allowed">
+                        <div class="flex items-center justify-between">
+                            <span>${opcao}</span>
+                            ${icon}
+                        </div>
+                    </button>
+                `;
+            });
+
+            return `
+                <div class="min-h-screen bg-gradient-to-br from-purple-600 via-pink-500 to-orange-400 flex items-center justify-center p-4">
+                    <div class="bg-white rounded-3xl shadow-2xl p-8 max-w-3xl w-full">
+                        <div class="flex justify-between items-center mb-8">
+                            <div>
+                                <div class="text-sm text-gray-500">Rodada ${state.rodada}</div>
+                                <div class="text-2xl font-bold text-gray-800">🏆 ${state.pontos} pontos</div>
+                            </div>
+                            <div class="px-4 py-2 rounded-full text-white font-bold" style="background-color: ${cor.cor}">
+                                ${state.categoriaAtual}
+                            </div>
+                        </div>
+
+                        <div class="rounded-2xl p-6 mb-8" style="background-color: ${cor.corClara}">
+                            <h2 class="text-2xl font-bold text-gray-800 text-center">${pergunta.pergunta}</h2>
+                        </div>
+
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-8">
+                            ${opcoesHTML}
+                        </div>
+
+                        ${state.mostrarResultado ? `
+                            <div class="space-y-4">
+                                <div class="rounded-2xl p-6 ${state.respostaSelecionada === pergunta.correta ? 'bg-green-100 border-2 border-green-500' : 'bg-red-100 border-2 border-red-500'}">
+                                    <div class="flex items-center gap-3 mb-3">
+                                        <div class="w-12 h-12 ${state.respostaSelecionada === pergunta.correta ? 'bg-green-500' : 'bg-red-500'} rounded-full flex items-center justify-center text-white text-2xl">
+                                            ${state.respostaSelecionada === pergunta.correta ? '✓' : '✗'}
+                                        </div>
+                                        <div>
+                                            <div class="text-2xl font-bold ${state.respostaSelecionada === pergunta.correta ? 'text-green-800' : 'text-red-800'}">
+                                                ${state.respostaSelecionada === pergunta.correta ? 'Correto!' : 'Ops!'}
+                                            </div>
+                                            <div class="${state.respostaSelecionada === pergunta.correta ? 'text-green-700' : 'text-red-700'}">
+                                                ${state.respostaSelecionada === pergunta.correta ? '+100 pontos' : 'Tente novamente na próxima'}
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="text-gray-700 bg-white/50 rounded-lg p-3">
+                                        <strong>Explicação:</strong> ${pergunta.explicacao}
+                                    </div>
+                                </div>
+
+                                <button onclick="proximaRodada()" class="w-full bg-gradient-to-r from-purple-600 to-pink-600 text-white py-4 rounded-xl font-bold text-lg hover:from-purple-700 hover:to-pink-700 transition-all transform hover:scale-105 shadow-lg">
+                                    Próxima Rodada →
+                                </button>
+                            </div>
+                        ` : ''}
+                    </div>
+                </div>
+            `;
+        }
+
+        function attachEventListeners() {
+            // Eventos já estão inline nos botões
+        }
+
+        window.comecarJogo = () => {
+            state.fase = 'roleta';
+            render();
+        };
+
+        window.girarRoleta = () => {
+            if (state.girando) return;
+            
+            state.girando = true;
+            render();
+            
+            const categorias = Object.keys(CATEGORIAS).filter(cat => PERGUNTAS[cat] && PERGUNTAS[cat].length > 0);
+            const catEscolhida = categorias[Math.floor(Math.random() * categorias.length)];
+            
+            const rotacoesCompletas = 5 + Math.random() * 3;
+            const anguloFatia = 360 / categorias.length;
+            const anguloFinal = anguloFatia * categorias.indexOf(catEscolhida);
+            const anguloTotal = (rotacoesCompletas * 360) + anguloFinal;
+            
+            state.anguloRoleta = anguloTotal;
+            render();
+            
+            setTimeout(() => {
+                state.girando = false;
+                state.categoriaAtual = catEscolhida;
+                state.fase = 'escolhaCarta';
+                render();
+            }, 3500);
+        };
+
+        window.escolherCarta = (index) => {
+            state.cartaSelecionada = index;
+            render();
+            
+            setTimeout(() => {
+                const perguntasDisponiveis = PERGUNTAS[state.categoriaAtual];
+                const pergunta = perguntasDisponiveis[Math.floor(Math.random() * perguntasDisponiveis.length)];
+                state.perguntaAtual = pergunta;
+                state.fase = 'quiz';
+                render();
+            }, 800);
+        };
+
+        window.responder = (index) => {
+            state.respostaSelecionada = index;
+            state.mostrarResultado = true;
+            
+            const acertou = index === state.perguntaAtual.correta;
+            
+            if (acertou) {
+                state.pontos += 100;
+                state.acertos += 1;
+            }
+            
+            render();
+        };
+
+        window.proximaRodada = () => {
+            state.rodada += 1;
+            state.fase = 'roleta';
+            state.categoriaAtual = null;
+            state.cartaSelecionada = null;
+            state.perguntaAtual = null;
+            state.respostaSelecionada = null;
+            state.mostrarResultado = false;
+            render();
+        };
+
+        // Iniciar
+        render();
+    </script>
+</body>
+</html>
